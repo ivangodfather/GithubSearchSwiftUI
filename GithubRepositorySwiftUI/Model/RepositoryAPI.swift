@@ -10,22 +10,23 @@ import Foundation
 import Combine
 
 final class RepositoryAPI {
-    func get(query: String) -> AnyPublisher<[Repository], GithubError> {
+    func get(query: String) -> AnyPublisher<Result<[Repository], GithubError>, Never> {
         guard var urlComponents = URLComponents(string: "https://api.github.com/search/repositories") else {
             return Empty().eraseToAnyPublisher()
         }
         urlComponents.queryItems = [URLQueryItem(name: "q", value: query)]
         guard let url = urlComponents.url else {
-            return Fail(error: GithubError.unkown).eraseToAnyPublisher()
+            return Empty().eraseToAnyPublisher()
         }
         return
             URLSession.shared.dataTaskPublisher(for: url)
             .map(\.data)
             .decode(type: ItemResponse<Repository>.self, decoder: JSONDecoder())
             .map(\.items)
-            .mapError { error -> GithubError in
-                return .unkown
-            }
+            .map { Result<[Repository], GithubError>.success($0) }
+            .catch({ error in
+                return Just(Result.failure(GithubError.unkown))
+            })
             .eraseToAnyPublisher()
     }
 }

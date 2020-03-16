@@ -27,17 +27,22 @@ final class RepositoryListViewModel: ObservableObject {
         searchTextPublisher.map { _ in true }.assign(to: \.isLoading, on: self).store(in: &subscriptions)
         
         let repositories = searchTextPublisher
+            .filter { $0.count > 2 }
             .throttle(for: .seconds(2), scheduler: DispatchQueue.main, latest: true)
-            .setFailureType(to: GithubError.self)
             .map(api.get)
             .switchToLatest()
+            .map { result -> [Repository] in
+                switch result {
+                case Result.success(let repos):
+                    return repos
+                case Result.failure(_):
+                    return []
+                }
+            }
             .eraseToAnyPublisher()
-            .replaceError(with: [])
             .receive(on: DispatchQueue.main)
             .share()
 
-            
-            
         repositories.map { _ in false }.assign(to: \.isLoading, on: self).store(in: &subscriptions)
         repositories.assign(to: \.repositories, on: self).store(in: &subscriptions)
     }

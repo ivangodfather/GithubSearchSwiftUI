@@ -24,7 +24,13 @@ struct RepositoryRow: View {
             Image(uiImage: networkRequest.result ?? UIImage())
                 .resizable().frame(width: 64, height: 64)
             Spacer()
-            Text(repository.name)
+            VStack {
+                Text(repository.name).font(Font.headline)
+                HStack {
+                    Image(systemName: "star.fill").foregroundColor(Color.yellow)
+                    Text(" Stars: \(repository.stars.description)")
+                }
+            }
         }.onAppear { self.networkRequest.request() }
     }
 }
